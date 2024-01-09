@@ -1,16 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>{{project_name}}</title>
+    <title>{{ title }}</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="css/style.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body>
-    <main>
-      <div class="container">
-        <h1>{{body}}</h1>
-      </div>
+  <body class="bg-gray-100">
+    <main class="container mx-auto p-4">
+      <form action="/contacts" method="get" class="mb-4">
+        <label for="search" class="block text-gray-700 text-sm font-bold mb-2">Search Term</label>
+        <input type="search" name="q" value="{{ q }}" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+        <input type="submit" value="Submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-3">
+      </form>
+      <table class="min-w-full mb-10 table-auto">
+        <thead>
+          <tr class="bg-gray-200">
+            <th class="px-4 py-2">First</th>
+            <th class="px-4 py-2">Last</th>
+            <th class="px-4 py-2">Phone</th>
+            <th class="px-4 py-2">Email</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for contact in contacts %}
+            <tr class="bg-white border-b">
+              <td class="px-4 py-2">{{ contact.first }}</td>
+              <td class="px-4 py-2">{{ contact.last }}</td>
+              <td class="px-4 py-2">{{ contact.phone }}</td>
+              <td class="px-4 py-2">{{ contact.email }}</td>
+              <td class="px-4 py-2">
+                <a class="p-2 bg-blue-500 hover:bg-blue-700 rounded text-white" href="/contacts/{{contact.id}}/edit">Edit</a>
+                <a class="p-2 bg-green-500 hover:bg-green-700 rounded text-white" href="/contacts/{{contact.id}}">View</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p>
+      <a class="justify-center bg-purple-500 font-bold text-white hover:bg-purple-700 rounded px-8 py-6" href="/contacts/new">Add Contact</a>
+      </p>
     </main>
   </body>
 </html>

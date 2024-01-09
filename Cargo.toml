@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4"
-handlebars = {version = "5", features = ["dir_source"]}
+tera = "1"
+serde = "1"
+serde_derive = "1"
