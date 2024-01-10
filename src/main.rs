@@ -91,7 +91,7 @@ async fn create_contact(
             .unwrap_or_else(|| "DefaultEmail".to_string()),
     };
     contacts_db.push(contact);
-    web::Redirect::to("/contacts")
+    web::Redirect::to("/contacts").see_other()
 }
 
 #[actix_web::main]
