@@ -1,5 +1,6 @@
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use serde_derive::Serialize;
+use std::collections::HashMap;
 use tera::{Context, Tera};
 
 #[derive(Serialize)]
@@ -17,8 +18,15 @@ async fn index() -> impl Responder {
 }
 
 #[get("/contacts")]
-async fn contacts(tera: web::Data<Tera>) -> HttpResponse {
+async fn contacts(req: HttpRequest, tera: web::Data<Tera>) -> HttpResponse {
     // Don't use JSON as data
+    let query_string = req.query_string();
+    let query_params: HashMap<String, String> = web::Query::from_query(query_string)
+        .unwrap_or_else(|_| web::Query(HashMap::new()))
+        .into_inner();
+
+    let q = query_params.get("q").cloned().unwrap_or("".to_string());
+
     let contacts = vec![
         Contact {
             id: 1,
@@ -42,11 +50,31 @@ async fn contacts(tera: web::Data<Tera>) -> HttpResponse {
             email: "asdsasd@gmail.com".to_string(),
         },
     ];
+
+    let contacts_to_show = contacts
+        .into_iter()
+        .filter(|contact| {
+            contact.first.to_lowercase().contains(&q.to_lowercase())
+                || contact.last.to_lowercase().contains(&q.to_lowercase())
+                || contact.phone.to_lowercase().contains(&q.to_lowercase())
+                || contact.email.to_lowercase().contains(&q.to_lowercase())
+        })
+        .collect::<Vec<_>>();
+
     let mut data = Context::new();
     data.insert("title", "Contacts");
-    data.insert("q", "this is the search term");
-    data.insert("contacts", &contacts);
+    data.insert("q", &q);
+    data.insert("contacts", &contacts_to_show);
     let body = tera.render("index.html", &data).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[get("/contacts/new")]
+async fn new_contact(tera: web::Data<Tera>) -> HttpResponse {
+    let mut data = Context::new();
+    println!("new contact");
+    data.insert("title", "New Contact");
+    let body = tera.render("new.html", &data).unwrap();
     HttpResponse::Ok().body(body)
 }
 

@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block title %}
+{{ title }}
+{% endblock title %}
+
+
+{% block content %}
+<form action="/contacts/new" method="post">
+  <fieldset>
+    <legend>Contact Values</legend>
+    <p>
+    <label for="email">Email</label>
+    <input type="email" name="email" value="email" placeholder="email" value="{{contact.email}}">
+    </p>
+  </fieldset>
+</form>
+{% endblock content %}
