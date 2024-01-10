@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="text-lg bg-zinc-300 p-4 mb-2 rounded shadow-md">
+<h1 class="text-xl font-bold ">{{contact.first}} {{contact.last}}</h1>
+  <div>
+    Phone: {{contact.phone}}
+  </div>
+  <div>
+    Email: {{contact.email}}
+  </div>
+</div>
+
+<p class="flex flex-col gap-2">
+  <a class="bg-blue-500 w-12 text-white p-2 rounded hover:bg-blue-800" href="/contacts/{{contact.id}}/edit">Edit</a>
+  <a class="text-blue-500 hover:text-blue-800" href="/contacts">Back</a>
+</p>
+
+{% endblock %}

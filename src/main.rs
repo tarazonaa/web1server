@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tera::{Context, Tera};
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 struct Contact {
     id: i32,
     first: String,
@@ -22,6 +22,8 @@ struct AppState {
 async fn index() -> impl Responder {
     web::Redirect::to("/contacts").permanent()
 }
+
+// LIST CONTACTS
 
 #[get("/contacts")]
 async fn contacts(req: HttpRequest, data: web::Data<AppState>) -> HttpResponse {
@@ -47,6 +49,23 @@ async fn contacts(req: HttpRequest, data: web::Data<AppState>) -> HttpResponse {
     let body = data.tera.render("index.html", &context).unwrap();
     HttpResponse::Ok().body(body)
 }
+
+#[get("/contacts/{id}")]
+async fn show_contact(data: web::Data<AppState>, path: web::Path<i32>) -> HttpResponse {
+    let id = path.into_inner();
+    let db = data.contacts_vec.lock().unwrap();
+    let contact = db
+        .iter()
+        .find(|contact| contact.id == id)
+        .unwrap_or_else(|| panic!("Contact with id {} not found in contacts: {:?}", id, db));
+    let mut context = Context::new();
+    context.insert("title", "Contact");
+    context.insert("contact", &contact);
+    let body = data.tera.render("show.html", &context).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+// NEW CONTACT
 
 #[get("/contacts/new")]
 async fn new_contact(data: web::Data<AppState>) -> HttpResponse {
@@ -94,6 +113,83 @@ async fn create_contact(
     web::Redirect::to("/contacts").see_other()
 }
 
+// EDIT CONTACT
+
+#[get("/contacts/{id}/edit")]
+async fn edit_contact(data: web::Data<AppState>, path: web::Path<i32>) -> HttpResponse {
+    let id = path.into_inner();
+    let db = data.contacts_vec.lock().unwrap();
+    let contact = db
+        .iter()
+        .find(|contact| contact.id == id)
+        .unwrap_or_else(|| panic!("Contact with id {} not found in contacts: {:?}", id, db));
+    let mut context = Context::new();
+    context.insert("title", "Edit Contact");
+    context.insert("contact", &contact);
+    let body = data.tera.render("edit.html", &context).unwrap();
+    HttpResponse::Ok().body(body)
+}
+
+#[post("/contacts/{id}/edit")]
+async fn update_contact(
+    data: web::Data<AppState>,
+    path: web::Path<i32>,
+    params: web::Form<HashMap<String, String>>,
+) -> impl Responder {
+    let id = path.into_inner();
+    let mut contacts_db = data.contacts_vec.lock().unwrap_or_else(|e| e.into_inner());
+
+    // First, find the position (index) of the contact
+    let contact_pos = contacts_db
+        .iter()
+        .position(|contact| contact.id == id)
+        .unwrap_or_else(|| panic!("Contact with id {} not found in contacts", id));
+
+    // Then, access and update the contact at that position
+    if let Some(contact) = contacts_db.get_mut(contact_pos) {
+        contact.first = params
+            .get("first")
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "DefaultFirstName".to_string());
+        contact.last = params
+            .get("last")
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "DefaultLastName".to_string());
+        contact.phone = params
+            .get("phone")
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "DefaultPhone".to_string());
+        contact.email = params
+            .get("email")
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| "DefaultEmail".to_string());
+    } else {
+        panic!("Contact with id {} not found in contacts", id);
+    }
+
+    web::Redirect::to("/contacts").see_other()
+}
+
+// DELETE CONTACT
+#[post("/contacts/{id}/delete")]
+async fn delete_contact(data: web::Data<AppState>, path: web::Path<i32>) -> impl Responder {
+    let id = path.into_inner();
+    let mut contacts_db = data.contacts_vec.lock().unwrap_or_else(|e| e.into_inner());
+
+    // First, find the position (index) of the contact
+    if let Some(contact_pos) = contacts_db
+        .iter()
+        .position(|contact| contact.id == id)
+        .clone()
+    {
+        contacts_db.remove(contact_pos);
+    } else {
+        panic!("Contact with id {} not found in contacts", id);
+    }
+
+    web::Redirect::to("/contacts").see_other()
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let tera = Tera::new("./static/**/*.html").unwrap();
@@ -113,18 +209,28 @@ async fn main() -> std::io::Result<()> {
             email: "jane@example.com".to_string(),
         },
     ]));
+    let server_url = "127.0.0.1:8080";
+
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
                 contacts_vec: contacts_db.clone(),
                 tera: tera.clone(),
             }))
-            .service(index)
-            .service(contacts)
-            .service(new_contact)
-            .service(create_contact)
+            .configure(init_services) // Use `configure` to add services
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(server_url)?
     .run()
     .await
+}
+
+fn init_services(cfg: &mut web::ServiceConfig) {
+    cfg.service(index)
+        .service(contacts)
+        .service(new_contact)
+        .service(create_contact)
+        .service(show_contact)
+        .service(edit_contact)
+        .service(update_contact)
+        .service(delete_contact);
 }

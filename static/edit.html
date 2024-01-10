@@ -1,11 +1,9 @@
 {% extends "layout.html" %}
 
-{% block title %}
-{{ title }}
-{% endblock title %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<form action="/contacts/new" method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+<form action="/contacts/{{contact.id}}/edit" method="post" class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
   <fieldset>
     <legend class="text-lg font-bold mb-4">Contact Values</legend>
 
@@ -31,9 +29,13 @@
 
     <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">Save</button>
   </fieldset>
+</form>
 
   <p class="mt-4">
     <a class="text-blue-500 hover:text-blue-800" href="/contacts">Back</a>
   </p>
-</form>
-{% endblock content %}
+
+  <form action="/contacts/{{contact.id}}/delete" method="post" >
+    <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-4" type="submit">Delete</button>
+  </form>
+{% endblock %}
